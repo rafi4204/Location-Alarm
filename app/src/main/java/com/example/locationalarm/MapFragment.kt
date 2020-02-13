@@ -32,7 +32,11 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+
+      /*  val mapFragment =  activity?.supportFragmentManager?.findFragmentById(R.id.frg)?.childFragmentManager as SupportMapFragment
+        mapFragment.getMapAsync(this)*/
         return inflater.inflate(R.layout.map_fragment, container, false)
+
     }
 
 
@@ -48,8 +52,9 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
-        val mapFragment =  activity?.supportFragmentManager?. findFragmentById(R.id.frg) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+
+
+
 
     }
 
