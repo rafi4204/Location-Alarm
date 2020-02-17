@@ -15,6 +15,10 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import android.R.attr.radius
+import com.google.android.gms.maps.model.CircleOptions
+
+
 
 
 class MapFragment : Fragment(), OnMapReadyCallback{
@@ -33,8 +37,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         savedInstanceState: Bundle?
     ): View? {
 
-      /*  val mapFragment =  activity?.supportFragmentManager?.findFragmentById(R.id.frg)?.childFragmentManager as SupportMapFragment
-        mapFragment.getMapAsync(this)*/
+
         return inflater.inflate(R.layout.map_fragment, container, false)
 
     }
@@ -45,13 +48,23 @@ class MapFragment : Fragment(), OnMapReadyCallback{
 
         // Add a marker in Sydney and move the camera
         val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
+        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney")).setDraggable(true)
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        mMap.addCircle(
+            CircleOptions()
+                .center(sydney)
+                .radius(10000*radius.toDouble())
+                .strokeWidth(10f)
+                .strokeColor(0x550000FF)
+                .fillColor(0x550000FF)
+        )
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
+        val mapFragment =  childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+        mapFragment?.getMapAsync(this)
 
 
 
