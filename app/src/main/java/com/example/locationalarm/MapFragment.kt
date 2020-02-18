@@ -22,6 +22,10 @@ import android.os.SystemClock
 import android.view.animation.BounceInterpolator
 import com.google.android.gms.maps.Projection
 import com.google.android.gms.maps.model.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class MapFragment : Fragment(), OnMapReadyCallback {
@@ -74,6 +78,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             marker.title = geocoder.getFromLocation(it.latitude, it.longitude, 1)[0].locality
             circle.center = it
             marker.isVisible = true
+            marker.isDraggable=true
             sydney = it
             jumpingMarker(it, marker)
 
@@ -83,9 +88,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             jumpingMarker(sydney, it)
             return@setOnMarkerClickListener true
         }
+
+       // jumpingMarker(sydney, marker)
+
+
     }
 
-    private fun jumpingMarker(latLng: LatLng, marker: Marker) {
+   private fun  jumpingMarker(latLng: LatLng, marker: Marker) {
 
         val handler = Handler()
         val start = SystemClock.uptimeMillis()
@@ -104,7 +113,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 marker.setPosition(LatLng(lat, lng))
                 if (t < 1.0) {
                     // Post again 16ms later.
-                    handler.postDelayed(this, 16)
+                   handler.postDelayed(this, 1)
                 }
             }
         })
@@ -116,7 +125,15 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
         geocoder = Geocoder(context, Locale.getDefault())
+       // var i=0
+        /*GlobalScope.launch(Dispatchers.Main) {
+            withContext(Dispatchers.IO) {   Log.d("2",i++.toString()) } // Get from IO context
+            // Back on main thread
+            //  Log.d("2",i++.toString())
+            //    jumpingMarker(sydney, marker)
 
+        }
+*/
 
     }
 
