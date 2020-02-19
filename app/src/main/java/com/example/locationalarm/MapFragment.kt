@@ -1,5 +1,6 @@
 package com.example.locationalarm
 
+import android.Manifest
 import android.app.Activity
 import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
@@ -13,13 +14,20 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import android.R.attr.radius
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Geocoder
+import android.location.Location
 import android.os.Handler
 import java.util.*
 import androidx.core.os.HandlerCompat.postDelayed
 import android.os.SystemClock
 import android.view.animation.BounceInterpolator
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.Projection
 import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +40,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private lateinit var geocoder: Geocoder
+
+    private var SYDNEY: LatLng? = null
+    private var DESTINATION: LatLng? = null
+    val ZOOM_LEVEL = 13f
+    lateinit var mLastLocation: Location
+    private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
+    private var mLocationPermissionGranted = false
+    val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 101
 
     companion object {
         fun newInstance() = MapFragment()
@@ -78,7 +94,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             marker.title = geocoder.getFromLocation(it.latitude, it.longitude, 1)[0].locality
             circle.center = it
             marker.isVisible = true
-            marker.isDraggable=true
+            marker.isDraggable = true
             sydney = it
             jumpingMarker(it, marker)
 
@@ -89,12 +105,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             return@setOnMarkerClickListener true
         }
 
-       // jumpingMarker(sydney, marker)
+        // jumpingMarker(sydney, marker)
 
 
     }
 
-   private fun  jumpingMarker(latLng: LatLng, marker: Marker) {
+    private fun jumpingMarker(latLng: LatLng, marker: Marker) {
 
         val handler = Handler()
         val start = SystemClock.uptimeMillis()
@@ -113,7 +129,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 marker.setPosition(LatLng(lat, lng))
                 if (t < 1.0) {
                     // Post again 16ms later.
-                   handler.postDelayed(this, 1)
+                    handler.postDelayed(this, 1)
                 }
             }
         })
@@ -125,7 +141,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
         geocoder = Geocoder(context, Locale.getDefault())
-       // var i=0
+        // var i=0
         /*GlobalScope.launch(Dispatchers.Main) {
             withContext(Dispatchers.IO) {   Log.d("2",i++.toString()) } // Get from IO context
             // Back on main thread
@@ -135,6 +151,87 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
 */
 
+        mFusedLocationProviderClient = activity?.let {
+            LocationServices.getFusedLocationProviderClient(
+                it
+            )
+        }!!
+        getLocationPermission()
+
     }
+
+    private fun getLocationPermission() {
+        if (context?.let {
+                ContextCompat.checkSelfPermission(
+                    it,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            }
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            mLocationPermissionGranted = true
+        } else {
+            activity?.let {
+                ActivityCompat.requestPermissions(
+                    it,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                )
+            }
+
+        }
+        getDeviceLocation()
+    }
+
+    private fun getDeviceLocation() {
+        try {
+            if (mLocationPermissionGranted) {
+                val locationResult = mFusedLocationProviderClient.lastLocation
+
+                locationResult?.addOnSuccessListener { location: Location? ->
+                    Log.d("2", location?.latitude.toString())
+                    Log.d("2", location?.longitude.toString())
+
+
+                    if (location != null) {
+                        SYDNEY = LatLng(location.latitude, location.longitude)
+                    }
+
+
+                    /* val mapFragment: SupportMapFragment? =
+                         supportFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+                     mapFragment?.getMapAsync(this)*/
+                }
+
+
+            }
+        } catch (e: SecurityException) {
+            Log.e("Exception: %s", e.message)
+        }
+
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
+                // If request is cancelled, the result arrays are empty.
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+
+                    mLocationPermissionGranted = true
+                    getDeviceLocation()
+                } else {
+                    Toast.makeText(context, "Permission Denied!!Are you ", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+
+        }
+    }
+
 
 }
