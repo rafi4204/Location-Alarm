@@ -70,20 +70,22 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMap = googleMap
 
         // Add a marker in Sydney and move the camera
-        var sydney = LatLng(-34.0, 151.0)
+        //var sydney = LatLng(-34.0, 151.0)
         val marker = mMap.addMarker(
-            MarkerOptions().position(sydney).title(
-                geocoder.getFromLocation(
-                    sydney.latitude,
-                    sydney.longitude,
-                    1
-                )[0].locality
-            )
+            SYDNEY?.let {
+                MarkerOptions().position(it).title(
+                    geocoder.getFromLocation(
+                        it.latitude,
+                        it.longitude,
+                        1
+                    )[0].locality
+                )
+            }
         )
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 14f))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(SYDNEY, 14f))
         val circle = mMap.addCircle(
             CircleOptions()
-                .center(sydney)
+                .center(SYDNEY)
                 .radius(1000.0)
                 .strokeColor(Color.RED)
                 .fillColor(Color.BLUE)
@@ -95,13 +97,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             circle.center = it
             marker.isVisible = true
             marker.isDraggable = true
-            sydney = it
+            SYDNEY = it
             jumpingMarker(it, marker)
 
         }
         mMap.setOnMarkerClickListener {
 
-            jumpingMarker(sydney, it)
+            SYDNEY?.let { it1 -> jumpingMarker(it1, it) }
             return@setOnMarkerClickListener true
         }
 
@@ -138,8 +140,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
-        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
-        mapFragment?.getMapAsync(this)
+      /*  val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+        mapFragment?.getMapAsync(this)*/
         geocoder = Geocoder(context, Locale.getDefault())
         // var i=0
         /*GlobalScope.launch(Dispatchers.Main) {
@@ -198,9 +200,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     }
 
 
-                    /* val mapFragment: SupportMapFragment? =
-                         supportFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
-                     mapFragment?.getMapAsync(this)*/
+                    val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+                    mapFragment?.getMapAsync(this)
                 }
 
 
