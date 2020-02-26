@@ -14,10 +14,12 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import android.R.attr.radius
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Geocoder
 import android.location.Location
+import android.net.Uri
 import android.os.Handler
 import java.util.*
 import androidx.core.os.HandlerCompat.postDelayed
@@ -129,10 +131,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val lng = t * latLng.longitude + (1 - t) * startLatLng.longitude
                 val lat = t * latLng.latitude + (1 - t) * startLatLng.latitude
                 marker.setPosition(LatLng(lat, lng))
-                if (t < 1.0) {
-                    // Post again 16ms later.
+               if (t < 1.0) {
+                  //   Post again 16ms later.
+
                     handler.postDelayed(this, 1)
                 }
+                SYDNEY?.let { jumpingMarker(it,marker) }
             }
         })
     }
@@ -152,6 +156,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         }
 */
+        val downloadIntent = Intent(context, MyIntentService::class.java)
+
+
+        context?.startService(downloadIntent)
 
         mFusedLocationProviderClient = activity?.let {
             LocationServices.getFusedLocationProviderClient(

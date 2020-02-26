@@ -1,8 +1,16 @@
 package com.example.locationalarm
 
+import android.annotation.SuppressLint
 import android.app.IntentService
 import android.content.Intent
 import android.content.Context
+import android.util.Log
+import android.os.Looper
+import androidx.core.content.ContextCompat.getSystemService
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import android.os.Handler
+import android.os.Message
+
 
 // TODO: Rename actions, choose action names that describe tasks that this
 // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
@@ -20,9 +28,9 @@ private const val EXTRA_PARAM2 = "com.example.locationalarm.extra.PARAM2"
  * helper methods.
  */
 class MyIntentService : IntentService("MyIntentService") {
-
+var i=0
     override fun onHandleIntent(intent: Intent?) {
-        when (intent?.action) {
+        /*when (intent?.action) {
             ACTION_FOO -> {
                 val param1 = intent.getStringExtra(EXTRA_PARAM1)
                 val param2 = intent.getStringExtra(EXTRA_PARAM2)
@@ -33,7 +41,16 @@ class MyIntentService : IntentService("MyIntentService") {
                 val param2 = intent.getStringExtra(EXTRA_PARAM2)
                 handleActionBaz(param1, param2)
             }
-        }
+        }*/
+
+       // Log.d("intent",i++.toString())
+      val handler=Handler()
+        handler.post(object :Runnable{
+            override fun run() {
+                Log.d("intent",i++.toString())
+                handler.postDelayed(this, 1)
+            }
+        })
     }
 
     /**
