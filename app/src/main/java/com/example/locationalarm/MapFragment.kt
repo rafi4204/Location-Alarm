@@ -21,6 +21,7 @@ import android.location.Geocoder
 import android.location.Location
 import android.net.Uri
 import android.os.Handler
+import android.os.Looper
 import java.util.*
 import androidx.core.os.HandlerCompat.postDelayed
 import android.os.SystemClock
@@ -123,9 +124,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         startPoint.offset(0, -100)
         val startLatLng = proj.fromScreenLocation(startPoint)
         val duration: Long = 1500
+
         val interpolator = BounceInterpolator()
         handler.post(object : Runnable {
-            override fun run() {
+            override fun run()
+            {
+
+                if (Looper.myLooper() == null)
+                {
+                    Looper.prepare()
+                }
+
+                handler.looper
+
                 val elapsed = SystemClock.uptimeMillis() - start
                 val t = interpolator.getInterpolation(elapsed.toFloat() / duration)
                 val lng = t * latLng.longitude + (1 - t) * startLatLng.longitude
@@ -137,6 +148,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     handler.postDelayed(this, 1)
                 }
                 SYDNEY?.let { jumpingMarker(it,marker) }
+                Looper.loop()
             }
         })
     }
@@ -156,10 +168,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         }
 */
-        val downloadIntent = Intent(context, MyIntentService::class.java)
+       // val downloadIntent = Intent(context, MyIntentService::class.java)
 
 
-        context?.startService(downloadIntent)
+        //context?.startService(downloadIntent)
 
         mFusedLocationProviderClient = activity?.let {
             LocationServices.getFusedLocationProviderClient(
