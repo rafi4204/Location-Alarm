@@ -1,15 +1,17 @@
 package com.example.locationalarm
 
-import android.annotation.SuppressLint
+import android.R
 import android.app.IntentService
-import android.content.Intent
+import android.app.Notification
+import android.app.PendingIntent
 import android.content.Context
-import android.util.Log
-import android.os.Looper
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import android.content.Intent
+import android.os.Build
 import android.os.Handler
-import android.os.Message
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationManagerCompat
+import com.example.locationalarm.MapFragment.Companion.CHANNEL_ID
 
 
 // TODO: Rename actions, choose action names that describe tasks that this
@@ -29,25 +31,33 @@ private const val EXTRA_PARAM2 = "com.example.locationalarm.extra.PARAM2"
  */
 class MyIntentService : IntentService("MyIntentService") {
 var i=0
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onHandleIntent(intent: Intent?) {
-        /*when (intent?.action) {
-            ACTION_FOO -> {
-                val param1 = intent.getStringExtra(EXTRA_PARAM1)
-                val param2 = intent.getStringExtra(EXTRA_PARAM2)
-                handleActionFoo(param1, param2)
-            }
-            ACTION_BAZ -> {
-                val param1 = intent.getStringExtra(EXTRA_PARAM1)
-                val param2 = intent.getStringExtra(EXTRA_PARAM2)
-                handleActionBaz(param1, param2)
-            }
-        }*/
 
-       // Log.d("intent",i++.toString())
-      val handler=Handler()
+
+        val notificationIntent = Intent(this, MapFragment::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0, notificationIntent, 0
+        )
+
+        val notification = Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle("Example Service")
+            .setContentText("input")
+            .setSmallIcon(R.drawable.ic_dialog_alert)
+            .setContentIntent(pendingIntent)
+
+        with(NotificationManagerCompat.from(this)) {
+            // notificationId is a unique int for each notification that you must define
+            notify(23, notification.build())
+        }
+       //startForeground(23, notification)
+
+
+      val handler= Handler()
         handler.post(object :Runnable{
             override fun run() {
-                Log.d("intent",i++.toString())
+                Log.d("intentService",i++.toString())
                 handler.postDelayed(this, 1)
             }
         })

@@ -1,42 +1,41 @@
 package com.example.locationalarm
 
 import android.Manifest
-import android.app.Activity
-import androidx.lifecycle.ViewModelProviders
-import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import android.R.attr.radius
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Geocoder
 import android.location.Location
-import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
-import java.util.*
-import androidx.core.os.HandlerCompat.postDelayed
 import android.os.SystemClock
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.view.animation.BounceInterpolator
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProviders
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.Projection
-import com.google.android.gms.maps.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.CircleOptions
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
+import java.util.*
 
 
 class MapFragment : Fragment(), OnMapReadyCallback {
@@ -54,6 +53,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     companion object {
         fun newInstance() = MapFragment()
+        val CHANNEL_ID = "exampleServiceChannel"
     }
 
     private lateinit var viewModel: MapViewModel
@@ -130,12 +130,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             override fun run()
             {
 
-                if (Looper.myLooper() == null)
+                /*if (Looper.myLooper() == null)
                 {
                     Looper.prepare()
                 }
 
-                handler.looper
+                handler.looper*/
 
                 val elapsed = SystemClock.uptimeMillis() - start
                 val t = interpolator.getInterpolation(elapsed.toFloat() / duration)
@@ -145,10 +145,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                if (t < 1.0) {
                   //   Post again 16ms later.
 
-                    handler.postDelayed(this, 1)
+                    handler.postDelayed(this, 1000)
                 }
-                SYDNEY?.let { jumpingMarker(it,marker) }
-                Looper.loop()
+               // SYDNEY?.let { jumpingMarker(it,marker) }
+              //  Looper.loop()
             }
         })
     }
@@ -172,6 +172,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
 
         //context?.startService(downloadIntent)
+        createNotificationChannel()
+        val intent = Intent(activity, MyIntentService::class.java)
+        activity?.startService(intent)
 
         mFusedLocationProviderClient = activity?.let {
             LocationServices.getFusedLocationProviderClient(
@@ -180,6 +183,23 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }!!
         getLocationPermission()
 
+    }
+      private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel =  NotificationChannel(
+                    CHANNEL_ID,
+                    "Example Service Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            )
+
+         /* val   manager = getSystemService(NotificationManager.class)
+            manager.createNotificationChannel(serviceChannel)*/
+            /*  val notificationManager: NotificationManager =
+            getSystemService(context!!,NotificationManager.class) as NotificationManager
+            notificationManager.createNotificationChannel(serviceChannel)*/
+                val notificationManager = activity?.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(serviceChannel)
+        }
     }
 
     private fun getLocationPermission() {
