@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
@@ -54,9 +55,10 @@ var i=0
        //startForeground(23, notification)
 
 
-      val handler= Handler()
+      val handler= Handler(Looper.getMainLooper())
         handler.post(object :Runnable{
             override fun run() {
+
                 Log.d("intentService",i++.toString())
                 handler.postDelayed(this, 1)
             }

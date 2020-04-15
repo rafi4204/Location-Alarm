@@ -3,9 +3,9 @@ package com.example.locationalarm
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Geocoder
@@ -22,11 +22,10 @@ import android.view.animation.BounceInterpolator
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -35,14 +34,16 @@ import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.tasks.Task
 import java.util.*
 
 
 class MapFragment : Fragment(), OnMapReadyCallback {
 
+    private val REQUEST_CHECK_SETTINGS = 101
     private lateinit var mMap: GoogleMap
     private lateinit var geocoder: Geocoder
-
+    var mHandler: Handler = Handler()
     private var SYDNEY: LatLng? = null
     private var DESTINATION: LatLng? = null
     val ZOOM_LEVEL = 13f
@@ -73,7 +74,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMap = googleMap
 
         // Add a marker in Sydney and move the camera
-        //var sydney = LatLng(-34.0, 151.0)
+        // SYDNEY = LatLng(-34.0, 151.0)
         val marker = mMap.addMarker(
             SYDNEY?.let {
                 MarkerOptions().position(it).title(
@@ -127,8 +128,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         val interpolator = BounceInterpolator()
         handler.post(object : Runnable {
-            override fun run()
-            {
+            override fun run() {
 
                 /*if (Looper.myLooper() == null)
                 {
@@ -142,13 +142,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val lng = t * latLng.longitude + (1 - t) * startLatLng.longitude
                 val lat = t * latLng.latitude + (1 - t) * startLatLng.latitude
                 marker.setPosition(LatLng(lat, lng))
-               if (t < 1.0) {
-                  //   Post again 16ms later.
+                if (t < 1.0) {
+                    //   Post again 16ms later.
 
                     handler.postDelayed(this, 1000)
                 }
-               // SYDNEY?.let { jumpingMarker(it,marker) }
-              //  Looper.loop()
+                // SYDNEY?.let { jumpingMarker(it,marker) }
+                //  Looper.loop()
             }
         })
     }
@@ -156,8 +156,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
-      /*  val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
-        mapFragment?.getMapAsync(this)*/
+        /* val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+         mapFragment?.getMapAsync(this)*/
         geocoder = Geocoder(context, Locale.getDefault())
         // var i=0
         /*GlobalScope.launch(Dispatchers.Main) {
@@ -168,13 +168,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         }
 */
-       // val downloadIntent = Intent(context, MyIntentService::class.java)
+        // val downloadIntent = Intent(context, MyIntentService::class.java)
 
 
         //context?.startService(downloadIntent)
-        createNotificationChannel()
-        val intent = Intent(activity, MyIntentService::class.java)
-        activity?.startService(intent)
+        /* createNotificationChannel()
+         val intent = Intent(activity, MyIntentService::class.java)
+         activity?.startService(intent)*/
 
         mFusedLocationProviderClient = activity?.let {
             LocationServices.getFusedLocationProviderClient(
@@ -184,20 +184,22 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         getLocationPermission()
 
     }
-      private fun createNotificationChannel() {
+
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel =  NotificationChannel(
-                    CHANNEL_ID,
-                    "Example Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                "Example Service Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
             )
 
-         /* val   manager = getSystemService(NotificationManager.class)
-            manager.createNotificationChannel(serviceChannel)*/
+            /* val   manager = getSystemService(NotificationManager.class)
+               manager.createNotificationChannel(serviceChannel)*/
             /*  val notificationManager: NotificationManager =
             getSystemService(context!!,NotificationManager.class) as NotificationManager
             notificationManager.createNotificationChannel(serviceChannel)*/
-                val notificationManager = activity?.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                activity?.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(serviceChannel)
         }
     }
@@ -212,6 +214,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             == PackageManager.PERMISSION_GRANTED
         ) {
             mLocationPermissionGranted = true
+            createLocationRequest()
         } else {
             activity?.let {
                 ActivityCompat.requestPermissions(
@@ -222,8 +225,44 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
 
         }
-        getDeviceLocation()
+        //  getDeviceLocation()
     }
+
+
+    fun createLocationRequest() {
+        val locationRequest = LocationRequest.create()?.apply {
+            interval = 10000
+            fastestInterval = 5000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+        val builder = locationRequest?.let {
+            LocationSettingsRequest.Builder()
+                .addLocationRequest(it)
+        }
+        val client = activity?.let { LocationServices.getSettingsClient(it) }
+        val task: Task<LocationSettingsResponse>? = client?.checkLocationSettings(builder?.build())
+        task?.addOnSuccessListener { locationSettingsResponse ->
+            getDeviceLocation()
+        }
+
+        task?.addOnFailureListener { exception ->
+            if (exception is ResolvableApiException) {
+                // Location settings are not satisfied, but this can be fixed
+                // by showing the user a dialog.
+                try {
+                    // Show the dialog by calling startResolutionForResult(),
+                    // and check the result in onActivityResult().
+                    exception.startResolutionForResult(
+                        activity,
+                        REQUEST_CHECK_SETTINGS
+                    )
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    // Ignore the error.
+                }
+            }
+        }
+    }
+
 
     private fun getDeviceLocation() {
         try {
@@ -238,10 +277,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     if (location != null) {
                         SYDNEY = LatLng(location.latitude, location.longitude)
                     }
-
-
-                    val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
+                    val mapFragment =
+                        childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
                     mapFragment?.getMapAsync(this)
+
+
                 }
 
 
@@ -252,6 +292,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when(requestCode){
+            REQUEST_CHECK_SETTINGS->getDeviceLocation()
+        }
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -266,7 +312,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     mLocationPermissionGranted = true
                     getDeviceLocation()
                 } else {
-                    Toast.makeText(context, "Permission Denied!!Are you ", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Permission Denied!!Are you ", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 return
             }
